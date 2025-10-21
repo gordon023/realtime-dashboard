@@ -1,4 +1,4 @@
-const API = "https://realtime-dashboard-1.onrender.com/api"; // change this after backend deploy
+const API = "https://realtime-dashboard-qlut.onrender.com/api"; // change this after backend deploy
 let currentUser = null;
 
 function showRegister(){document.getElementById("loginForm").style.display="none";document.getElementById("registerForm").style.display="block";}
