@@ -1,4 +1,4 @@
-const API_URL = "https://realtime-dashboard-qlut.onrender.com/api"; // change after deploy
+const API_URL = "https://realtime-dashboard-qlut.onrender.com"; // change after deploy
 let currentUser = null;
 
 // --- Login/Register ---
