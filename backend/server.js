@@ -9,40 +9,51 @@ app.use(cors());
 app.use(express.json());
 
 // --- MongoDB Connection ---
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("MongoDB Error:", err));
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => console.error("MongoDB Error:", err));
 
 // --- Schemas ---
-const UserSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
   username: String,
   password: String,
   role: { type: String, default: "user" }
 });
-const WalletSchema = new mongoose.Schema({
+
+const walletSchema = new mongoose.Schema({
   name: String,
   wallet: String,
   addedBy: String
 });
-const CombatSchema = new mongoose.Schema({
+
+const combatSchema = new mongoose.Schema({
   name: String,
   image: String,
   power: String,
   addedBy: String
 });
 
-const User = mongoose.model("User", UserSchema);
-const Wallet = mongoose.model("Wallet", WalletSchema);
-const Combat = mongoose.model("Combat", CombatSchema);
+const User = mongoose.model("User", userSchema);
+const Wallet = mongoose.model("Wallet", walletSchema);
+const Combat = mongoose.model("Combat", combatSchema);
+
+// --- Ensure admin exists ---
+async function ensureAdmin() {
+  const exists = await User.findOne({ username: "admin" });
+  if (!exists) {
+    await User.create({ username: "admin", password: "0101", role: "admin" });
+    console.log("🛠️ Admin user created (admin/0101)");
+  }
+}
+ensureAdmin();
 
 // --- Routes ---
-// Register new user
+// Register
 app.post("/api/register", async (req, res) => {
   const { username, password } = req.body;
   const existing = await User.findOne({ username });
-  if (existing) return res.status(400).json({ error: "User already exists" });
-  await User.create({ username, password });
+  if (existing) return res.status(400).json({ error: "Username already exists" });
+  await User.create({ username, password, role: "user" });
   res.json({ message: "Registered successfully" });
 });
 
@@ -54,7 +65,7 @@ app.post("/api/login", async (req, res) => {
   res.json(user);
 });
 
-// Wallet APIs
+// --- Wallet APIs ---
 app.get("/api/wallets", async (_, res) => res.json(await Wallet.find()));
 app.post("/api/wallets", async (req, res) => res.json(await Wallet.create(req.body)));
 app.put("/api/wallets/:id", async (req, res) =>
@@ -65,7 +76,7 @@ app.delete("/api/wallets/:id", async (req, res) => {
   res.json({ message: "Deleted" });
 });
 
-// Combat APIs
+// --- Combat APIs ---
 app.get("/api/combats", async (_, res) => res.json(await Combat.find()));
 app.post("/api/combats", async (req, res) => res.json(await Combat.create(req.body)));
 app.put("/api/combats/:id", async (req, res) =>
@@ -74,6 +85,16 @@ app.put("/api/combats/:id", async (req, res) =>
 app.delete("/api/combats/:id", async (req, res) => {
   await Combat.findByIdAndDelete(req.params.id);
   res.json({ message: "Deleted" });
+});
+
+// --- Admin User Management ---
+app.get("/api/users", async (_, res) => res.json(await User.find()));
+app.put("/api/users/:id", async (req, res) =>
+  res.json(await User.findByIdAndUpdate(req.params.id, req.body, { new: true }))
+);
+app.delete("/api/users/:id", async (req, res) => {
+  await User.findByIdAndDelete(req.params.id);
+  res.json({ message: "User Deleted" });
 });
 
 const PORT = process.env.PORT || 5000;
